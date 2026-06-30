@@ -19,8 +19,9 @@
     <PackageReference Include="Azure.Identity" Version="1.13.1" />
     <PackageReference Include="Azure.Extensions.AspNetCore.Configuration.Secrets" Version="1.3.2" />
 
-    <!-- OpenAPI (встроено в .NET 8, Swashbuckle не нужен) -->
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.10" />
+    <!-- OpenAPI/Swagger — AddOpenApi/MapOpenApi появились только в .NET 9,
+         поэтому для .NET 8 берём классический Swashbuckle -->
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
 </Project>
