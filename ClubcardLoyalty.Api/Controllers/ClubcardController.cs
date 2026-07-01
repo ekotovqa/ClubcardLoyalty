@@ -45,8 +45,14 @@ public class ClubcardController : ControllerBase
     ///    и того же запроса при ретрае по сети (а не только от честной конкуренции).
     /// </summary>
     [HttpPost("redeem")]
-    public async Task<IActionResult> Redeem(string cardId, [FromBody] RedeemRequest request)
+    public async Task<IActionResult> Redeem(
+        string cardId,
+        [FromBody] RedeemRequest request,
+        [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey)
     {
+        if (string.IsNullOrWhiteSpace(idempotencyKey))
+            return BadRequest(new { message = "Idempotency-Key header is required." });
+
         if (!ModelState.IsValid)
         {
             return ValidationProblem(ModelState);
@@ -79,7 +85,7 @@ public class ClubcardController : ControllerBase
                 Amount = -request.Amount,
                 Type = TransactionType.Redeem,
                 Channel = request.Channel,
-                IdempotencyKey = request.IdempotencyKey,
+                IdempotencyKey = idempotencyKey,
                 CreatedUtc = DateTime.UtcNow
             });
 
@@ -104,8 +110,14 @@ public class ClubcardController : ControllerBase
     }
 
     [HttpPost("earn")]
-    public async Task<IActionResult> Earn(string cardId, [FromBody] EarnRequest request)
+    public async Task<IActionResult> Earn(
+        string cardId,
+        [FromBody] EarnRequest request,
+        [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey)
     {
+        if (string.IsNullOrWhiteSpace(idempotencyKey))
+            return BadRequest(new { message = "Idempotency-Key header is required." });
+
         if (!ModelState.IsValid)
         {
             return ValidationProblem(ModelState);
@@ -127,7 +139,7 @@ public class ClubcardController : ControllerBase
             Amount = request.Amount,
             Type = TransactionType.Earn,
             Channel = request.Channel,
-            IdempotencyKey = request.IdempotencyKey,
+            IdempotencyKey = idempotencyKey,
             CreatedUtc = DateTime.UtcNow
         });
 

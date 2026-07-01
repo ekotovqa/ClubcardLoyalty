@@ -1,0 +1,82 @@
+warning: in the working copy of 'ClubcardLoyalty.Api/Controllers/ClubcardController.cs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ClubcardLoyalty.Api/Models/Dtos.cs', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/ClubcardLoyalty.Api/Controllers/ClubcardController.cs b/ClubcardLoyalty.Api/Controllers/ClubcardController.cs[m
+[1mindex e15edc8..959b03c 100644[m
+[1m--- a/ClubcardLoyalty.Api/Controllers/ClubcardController.cs[m
+[1m+++ b/ClubcardLoyalty.Api/Controllers/ClubcardController.cs[m
+[36m@@ -45,8 +45,14 @@[m [mpublic class ClubcardController : ControllerBase[m
+     ///    и того же запроса при ретрае по сети (а не только от честной конкуренции).[m
+     /// </summary>[m
+     [HttpPost("redeem")][m
+[31m-    public async Task<IActionResult> Redeem(string cardId, [FromBody] RedeemRequest request)[m
+[32m+[m[32m    public async Task<IActionResult> Redeem([m
+[32m+[m[32m        string cardId,[m
+[32m+[m[32m        [FromBody] RedeemRequest request,[m
+[32m+[m[32m        [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey)[m
+     {[m
+[32m+[m[32m        if (string.IsNullOrWhiteSpace(idempotencyKey))[m
+[32m+[m[32m            return BadRequest(new { message = "Idempotency-Key header is required." });[m
+[32m+[m
+         if (!ModelState.IsValid)[m
+         {[m
+             return ValidationProblem(ModelState);[m
+[36m@@ -79,7 +85,7 @@[m [mpublic class ClubcardController : ControllerBase[m
+                 Amount = -request.Amount,[m
+                 Type = TransactionType.Redeem,[m
+                 Channel = request.Channel,[m
+[31m-                IdempotencyKey = request.IdempotencyKey,[m
+[32m+[m[32m                IdempotencyKey = idempotencyKey,[m
+                 CreatedUtc = DateTime.UtcNow[m
+             });[m
+ [m
+[36m@@ -104,8 +110,14 @@[m [mpublic class ClubcardController : ControllerBase[m
+     }[m
+ [m
+     [HttpPost("earn")][m
+[31m-    public async Task<IActionResult> Earn(string cardId, [FromBody] EarnRequest request)[m
+[32m+[m[32m    public async Task<IActionResult> Earn([m
+[32m+[m[32m        string cardId,[m
+[32m+[m[32m        [FromBody] EarnRequest request,[m
+[32m+[m[32m        [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey)[m
+     {[m
+[32m+[m[32m        if (string.IsNullOrWhiteSpace(idempotencyKey))[m
+[32m+[m[32m            return BadRequest(new { message = "Idempotency-Key header is required." });[m
+[32m+[m
+         if (!ModelState.IsValid)[m
+         {[m
+             return ValidationProblem(ModelState);[m
+[36m@@ -127,7 +139,7 @@[m [mpublic class ClubcardController : ControllerBase[m
+             Amount = request.Amount,[m
+             Type = TransactionType.Earn,[m
+             Channel = request.Channel,[m
+[31m-            IdempotencyKey = request.IdempotencyKey,[m
+[32m+[m[32m            IdempotencyKey = idempotencyKey,[m
+             CreatedUtc = DateTime.UtcNow[m
+         });[m
+ [m
+[1mdiff --git a/ClubcardLoyalty.Api/Models/Dtos.cs b/ClubcardLoyalty.Api/Models/Dtos.cs[m
+[1mindex a90eb96..694271e 100644[m
+[1m--- a/ClubcardLoyalty.Api/Models/Dtos.cs[m
+[1m+++ b/ClubcardLoyalty.Api/Models/Dtos.cs[m
+[36m@@ -8,11 +8,6 @@[m [mpublic class RedeemRequest[m
+     public long Amount { get; set; }[m
+ [m
+     public Channel Channel { get; set; }[m
+[31m-[m
+[31m-    // Клиент (касса/приложение) должен присылать один и тот же ключ при ретрае[m
+[31m-    // одного и того же логического запроса (например, GUID, сгенерированный на клиенте).[m
+[31m-    [Required][m
+[31m-    public string IdempotencyKey { get; set; } = default!;[m
+ }[m
+ [m
+ public class EarnRequest[m
+[36m@@ -21,9 +16,6 @@[m [mpublic class EarnRequest[m
+     public long Amount { get; set; }[m
+ [m
+     public Channel Channel { get; set; }[m
+[31m-[m
+[31m-    [Required][m
+[31m-    public string IdempotencyKey { get; set; } = default!;[m
+ }[m
+ [m
+ public record BalanceResponse(string CardId, long Balance, DateTime UpdatedUtc);[m
