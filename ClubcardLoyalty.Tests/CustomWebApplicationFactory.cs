@@ -2,20 +2,29 @@ using ClubcardLoyalty.Api.Data;
 using ClubcardLoyalty.Api.Models;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace ClubcardLoyalty.Tests;
 
 /// <summary>
 /// Поднимает реальный HTTP-сервер в памяти — без Docker, без внешних зависимостей.
-/// Заменяет SQL Server на EF Core InMemory и отключает Key Vault.
-/// Каждый экземпляр фабрики использует изолированную БД (уникальное имя).
+/// Заменяет SQL Server на SQLite InMemory и отключает Key Vault.
+///
+/// Почему SQLite, а не EF Core InMemory:
+/// - EF Core InMemory не поддерживает ExecuteSqlInterpolatedAsync (raw SQL)
+/// - EF Core InMemory не поддерживает BeginTransactionAsync (выбрасывает исключение)
+/// - SQLite InMemory — настоящая реляционная БД в памяти: поддерживает и raw SQL, и транзакции
+///
+/// Важно: SQLite InMemory БД живёт ровно столько, сколько открыт SqliteConnection.
+/// Поэтому мы открываем соединение в конструкторе и закрываем в Dispose.
 /// </summary>
 public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 {
-    // Уникальная БД на каждый экземпляр фабрики — тесты не мешают друг другу
-    private readonly string _dbName = Guid.NewGuid().ToString();
+    // Одно соединение на весь lifetime фабрики — иначе InMemory БД исчезнет между запросами
+    private readonly SqliteConnection _connection = new("DataSource=:memory:");
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -30,14 +39,29 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             if (descriptor != null)
                 services.Remove(descriptor);
 
-            // Заменяем на InMemory — без реального SQL Server
+            // Заменяем на SQLite InMemory — поддерживает транзакции и raw SQL
             services.AddDbContext<LoyaltyDbContext>(options =>
-                options.UseInMemoryDatabase(_dbName));
+                options.UseSqlite(_connection));
         });
     }
 
+    protected override IHost CreateHost(IHostBuilder builder)
+    {
+        // Открываем соединение ДО того, как хост создаст первый scope и потребует DbContext
+        _connection.Open();
+
+        var host = base.CreateHost(builder);
+
+        // Создаём схему БД (таблицы, индексы) на основе EF Core модели
+        using var scope = host.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<LoyaltyDbContext>();
+        db.Database.EnsureCreated();
+
+        return host;
+    }
+
     /// <summary>
-    /// Вспомогательный метод — засеять тестовую карту прямо в InMemory БД.
+    /// Вспомогательный метод — засеять тестовую карту в SQLite БД.
     /// </summary>
     public void SeedCard(string cardId, string customerId, long balance)
     {
@@ -49,8 +73,15 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             CustomerId = customerId,
             Balance = balance,
             UpdatedUtc = DateTime.UtcNow,
-            RowVersion = Array.Empty<byte>()
+            RowVersion = new byte[8]
         });
         db.SaveChanges();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        if (disposing)
+            _connection.Dispose();
     }
 }

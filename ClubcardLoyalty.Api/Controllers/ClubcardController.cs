@@ -62,9 +62,10 @@ public class ClubcardController : ControllerBase
 
         try
         {
+            var now = DateTime.UtcNow;
             var rowsAffected = await _db.Database.ExecuteSqlInterpolatedAsync($@"
                 UPDATE ClubcardAccounts
-                SET Balance = Balance - {request.Amount}, UpdatedUtc = SYSUTCDATETIME()
+                SET Balance = Balance - {request.Amount}, UpdatedUtc = {now}
                 WHERE CardId = {cardId} AND Balance >= {request.Amount}");
 
             if (rowsAffected == 0)
@@ -123,9 +124,10 @@ public class ClubcardController : ControllerBase
             return ValidationProblem(ModelState);
         }
 
+        var now = DateTime.UtcNow;
         var rowsAffected = await _db.Database.ExecuteSqlInterpolatedAsync($@"
             UPDATE ClubcardAccounts
-            SET Balance = Balance + {request.Amount}, UpdatedUtc = SYSUTCDATETIME()
+            SET Balance = Balance + {request.Amount}, UpdatedUtc = {now}
             WHERE CardId = {cardId}");
 
         if (rowsAffected == 0)
