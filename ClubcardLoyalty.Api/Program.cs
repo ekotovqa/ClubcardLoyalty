@@ -1,5 +1,6 @@
 using Azure.Identity;
 using ClubcardLoyalty.Api.Data;
+using ClubcardLoyalty.Api.Middleware;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,6 +23,7 @@ if (!string.IsNullOrWhiteSpace(keyVaultUri))
 builder.Services.AddDbContext<LoyaltyDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("LoyaltyDb")));
 
+builder.Services.AddMemoryCache();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -35,6 +37,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseMiddleware<IdempotencyMiddleware>();
 app.MapControllers();
 
 app.Run();
