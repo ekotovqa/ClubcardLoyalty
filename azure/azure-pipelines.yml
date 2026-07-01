@@ -53,14 +53,8 @@ stages:
             inputs:
               command: 'test'
               projects: 'ClubcardLoyalty.Tests/ClubcardLoyalty.Tests.csproj'
-              arguments: '--configuration $(buildConfiguration) --logger trx --results-directory $(Agent.TempDirectory)'
-
-          - task: PublishTestResults@2
-            displayName: 'Publish test results'
-            condition: always()
-            inputs:
-              testResultsFormat: 'VSTest'
-              testResultsFiles: '$(Agent.TempDirectory)/**/*.trx'
+              arguments: '--configuration $(buildConfiguration)'
+              publishTestResults: true
 
           - task: DotNetCoreCLI@2
             displayName: 'Publish'
