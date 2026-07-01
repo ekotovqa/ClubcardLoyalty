@@ -21,5 +21,5 @@ public class ClubcardAccount
     // но колонка остаётся как защита для остальных операций с этой сущностью
     // (например, если кто-то отредактирует баланс через админку).
     [Timestamp]
-    public byte[] RowVersion { get; set; } = default!;
+    public byte[]? RowVersion { get; set; }
 }

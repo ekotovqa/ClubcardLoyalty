@@ -72,8 +72,9 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             CardId = cardId,
             CustomerId = customerId,
             Balance = balance,
-            UpdatedUtc = DateTime.UtcNow,
-            RowVersion = new byte[8]
+            UpdatedUtc = DateTime.UtcNow
+            // RowVersion: omitted — EF Core omits it from INSERT (server-generated),
+            // SQLite stores NULL (nullable column), SQL Server auto-generates the value
         });
         db.SaveChanges();
     }
