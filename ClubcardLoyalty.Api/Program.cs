@@ -41,3 +41,8 @@ app.UseMiddleware<IdempotencyMiddleware>();
 app.MapControllers();
 
 app.Run();
+
+// Нужно для WebApplicationFactory в интеграционных тестах:
+// тип Program в minimal hosting генерируется как internal,
+// partial class делает его доступным из тестового проекта.
+public partial class Program { }
